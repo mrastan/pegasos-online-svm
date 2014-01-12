@@ -1,0 +1,82 @@
+<project name="DM_2013-SVM" default="dist" basedir=".">
+    <description>
+        Data mining 2013 - SVM
+    </description>
+    
+  <!-- CHANGE HERE -->
+  <property name="hadoop"  location="../hadoop-1.1.1/"/>
+  <property name="train_data"  location="data/svm-dataset-mapred/svm-train-small.dat"/>
+  <property name="test_data"  location="data/svm-dataset-mapred/svm-test-small.dat"/>
+  <property name="model_dir"  location="svn.model.out"/>
+  <property name="model_data"  location="svn.model"/>
+  <!--  -->
+  
+  <property name="src" location="src"/>
+  <property name="build" location="build"/>
+  <property name="dist"  location="dist"/>
+
+  <target name="init">
+    <tstamp/>
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile" depends="init"
+        description="compile the source " >
+    <javac srcdir="${src}" destdir="${build}" includeantruntime="false">
+      <classpath>
+        <fileset dir="${hadoop}">
+          <include name="hadoop-core-*.jar"/>
+          <include name="lib/*.jar"/>
+        </fileset>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="dist" depends="compile"
+        description="generate the distribution" >
+    <mkdir dir="${dist}"/>
+
+    <jar jarfile="${dist}/PSGD.jar" basedir="${build}"/>
+  </target>
+  
+  <target name="train"
+        description="Train Model" >
+    <exec executable="${hadoop}/bin/hadoop">
+    <arg line="jar"/>
+    <arg line="${dist}/PSGD.jar"/>
+    <arg line="org.ethz.las.PSGD"/>
+    <arg line="${train_data}"/>
+    <arg line="${model_dir}"/>
+    </exec>
+  </target>
+  
+  <target name="merge"
+        description="Train Model" >
+    <exec executable="${hadoop}/bin/hadoop">
+    <arg line="fs"/>
+    <arg line="-getmerge"/>
+    <arg line="${model_dir}"/>
+    <arg line="${model_data}"/>
+    </exec>
+  </target>
+  
+  <target name="test"
+        description="Test Model" >
+    <java classname="org.ethz.las.Performance">
+      <arg value="${model_data}"/>
+      <arg value="${test_data}"/>
+      <classpath>
+        <pathelement path="${build}"/>
+      </classpath>
+    </java>
+  </target>
+
+  <target name="clean"
+        description="clean up" >
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+    <delete dir="${model_dir}"/>
+    <delete file="${model_data}"/>
+  </target>
+</project>
